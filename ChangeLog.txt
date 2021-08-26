@@ -1,5 +1,8 @@
 ChangeLog
 
+1.2.11.3 (unreleased)
+	updated version file
+
 1.2.11.2
 	Added AssemblyFileVersion
 
