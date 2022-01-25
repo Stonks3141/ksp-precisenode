@@ -35,6 +35,6 @@ using System.Runtime.InteropServices;
 //[assembly: AssemblyVersion("1.0.0.4")]
 //[assembly: AssemblyFileVersion("1.2.4.0")]
 
-[assembly: KSPAssembly("PreciseNode", 1, 2)]
+//[assembly: KSPAssembly("PreciseNode", 1, 2)]
 
 [assembly: KSPAssemblyDependency("ClickThroughBlocker", 1, 0)]
