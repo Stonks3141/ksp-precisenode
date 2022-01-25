@@ -1,7 +1,9 @@
 ChangeLog
 
-1.2.11.3 (unreleased)
+1.2.11.3 
 	updated version file
+	Thanks to github user @archibate for this:
+		zh-cn localization
 
 1.2.11.2
 	Added AssemblyFileVersion
