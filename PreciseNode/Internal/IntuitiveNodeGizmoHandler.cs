@@ -208,7 +208,9 @@ namespace RegexKSP {
 
 		public void DeleteHandler() {
 			DetachHandleHandlers();
-			this.maneuverNode.attachedGizmo.OnDelete -= this.DeleteHandler;
+
+			if(this.maneuverNode.attachedGizmo != null)
+				this.maneuverNode.attachedGizmo.OnDelete -= this.DeleteHandler;
 
 			// remove this handler from the addin's list
 			this.intuitiveManeuvers.RemoveIntuitiveManeuverHandler(this);

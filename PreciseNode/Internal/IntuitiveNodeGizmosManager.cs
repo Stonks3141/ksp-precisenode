@@ -54,30 +54,38 @@ namespace RegexKSP {
 		}
 
 		internal void OnDestroy() {
-			while (this.maneuverGizmoHandlers.Count > 0)
-				this.maneuverGizmoHandlers[0].DeleteHandler();
+			ClearHandlers();
 		}
 
 		PatchedConicSolver curSolver = null;
 		private void UpdateIntuitiveManeuverHandlersList() {
 			PatchedConicSolver solver = NodeTools.getSolver();
+
 			if (solver != curSolver)
 			{
-				this.maneuverGizmoHandlers.Clear();
+				ClearHandlers();
 				curSolver = solver;
-				if (solver != null)
-				{
-					List<ManeuverNode> nodes = solver.maneuverNodes;
-					for (int i = 0; i < nodes.Count; i++)
-					{
-						ManeuverNode node = nodes[i];
-						if ((node.attachedGizmo != null) && !isHandled(node))
-						{
-							this.maneuverGizmoHandlers.Add(new IntuitiveNodeGizmoHandler(this, node, options));
-						}
-					}
-				}
 			}
+
+			if (solver != null)
+			{
+				List<ManeuverNode> nodes = solver.maneuverNodes;
+
+				for (int i = 0; i < nodes.Count; i++)
+				{
+					ManeuverNode node = nodes[i];
+					if (node.attachedGizmo != null && !isHandled(node))
+						this.maneuverGizmoHandlers.Add(new IntuitiveNodeGizmoHandler(this, node, options));
+				}
+
+				if (nodes.Count == 0 && this.maneuverGizmoHandlers.Count > 0)
+					ClearHandlers();
+			}
+		}
+
+		private void ClearHandlers() {
+			while (this.maneuverGizmoHandlers.Count > 0)
+				this.maneuverGizmoHandlers[0].DeleteHandler();
 		}
 
 		private bool isHandled(ManeuverNode node) {
