@@ -1,5 +1,11 @@
 ChangeLog
 
+1.2.12
+	Thanks to Github user @WagnerGFX for this:
+		Fixed the Intuitive Maneuvers feature. The logic itself is intact, what I changed was another logic that detected new maneuver nodes to add the handler to override the stock behavior.
+		Added a fix to the "+ Orb" button that was displaying as "- + Orb" while only incrementing.
+			This issue was in the English, Spanish and Russian translation, but not on the Chinese one.
+
 1.2.11.3 
 	updated version file
 	Thanks to github user @archibate for this:
