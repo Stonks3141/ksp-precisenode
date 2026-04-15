@@ -111,6 +111,8 @@ namespace RegexKSP {
                     if(!curState.hasNode() || !solver.maneuverNodes.Contains(curState.node)) {
                         // get the first one if we can't find the current or it's null
                         curState = new NodeManager(solver.maneuverNodes[0]);
+                        curState.angleRefIndex = options.angleRefIndex;
+                        curState.updateAngleText();
                     } else if(curState.hasNode()) {
                         curState.updateNode();
                         curState = curState.nextState();
@@ -402,6 +404,32 @@ namespace RegexKSP {
 			double ut_increment = options.increment * (options.largeUTIncrement ? 10.0 : 1.0);
 			GUIParts.drawPlusMinusButtons(() => { curState.addUT(ut_increment); }, () => { curState.addUT(-ut_increment); },
 				true, curState.node.patch.isUTInsidePatch(currentUT - ut_increment));
+			GUILayout.EndHorizontal();
+
+			// Angle-based position row
+			GUILayout.BeginHorizontal();
+			int newRef = GUILayout.Toolbar(curState.angleRefIndex,
+				new string[] {
+					Localizer.Format("#PN_AngleRef_Pe"),
+					Localizer.Format("#PN_AngleRef_AN"),
+					Localizer.Format("#PN_AngleRef_VE")
+				}, GUILayout.Width(130));
+			if (newRef != curState.angleRefIndex) {
+				curState.setAngleRef(newRef);
+				options.angleRefIndex = newRef;
+			}
+			if (!curState.angleParsed) {
+				GUI.contentColor = Color.red;
+			}
+			string angleCheck = GUILayout.TextField(curState.angleText, GUILayout.Width(70));
+			if (!curState.angleText.Equals(angleCheck, StringComparison.Ordinal)) {
+				curState.setAngle(angleCheck);
+			}
+			GUI.contentColor = contentColor;
+			GUIParts.drawPlusMinusButtons(
+				() => { curState.addAngle(options.increment); },
+				() => { curState.addAngle(-options.increment); }
+			);
 			GUILayout.EndHorizontal();
 
 			// extended time controls
@@ -993,6 +1021,7 @@ namespace RegexKSP {
 				options.usedNodeThreshold = config.GetValue<double>("usedNodeThreshold", 0.5);
 #endif
 				options.largeUTIncrement = config.GetValue<bool>("largeUTIncrement", false);
+				options.angleRefIndex = config.GetValue<int>("angleRefIndex", 0);
 
 				string temp = config.GetValue<String>("progInc", "Keypad8");
 				options.progInc = (KeyCode)Enum.Parse(typeof(KeyCode), temp);
@@ -1068,6 +1097,7 @@ namespace RegexKSP {
 			config["usedNodeThreshold"] = options.usedNodeThreshold;
 #endif
 			config["largeUTIncrement"] = options.largeUTIncrement;
+			config["angleRefIndex"] = options.angleRefIndex;
 
 			config.save();
 		}

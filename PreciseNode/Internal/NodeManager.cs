@@ -48,6 +48,10 @@ namespace RegexKSP {
 		internal string normalText = "";
 		internal string timeText = "";
 
+		internal int angleRefIndex = 0; // 0=Periapsis, 1=AN, 2=VernalEquinox
+		internal string angleText = "0";
+		internal bool angleParsed = true;
+
 		internal bool HasMemorized {
 			get {
 				return memory != null;
@@ -68,6 +72,7 @@ namespace RegexKSP {
 			curNodeState = new NodeState();
 			node = n;
 			updateCurrentNodeState();
+			updateAngleText();
 
 			if (n.findNextEncounter() != null) {
 				encounter = true;
@@ -76,7 +81,10 @@ namespace RegexKSP {
 
 		internal NodeManager nextState() {
 			if (nextNode != null) {
-				return new NodeManager(nextNode);
+				NodeManager next = new NodeManager(nextNode);
+				next.angleRefIndex = angleRefIndex;
+				next.updateAngleText();
+				return next;
 			}
 			if (node.findNextEncounter() != null) {
 				encounter = true;
@@ -185,12 +193,17 @@ namespace RegexKSP {
 		}
 
 		internal void addUT(double d) {
-			curState.UT += d;
-			timeText = curState.UT.ToString();
-			changed = true;
+			setUTInternal(curState.UT + d);
+			updateAngleText();
 		}
 
 		internal void setUT(double d) {
+			setUTInternal(d);
+			updateAngleText();
+		}
+
+		// Sets UT without syncing angleText. Use when the caller manages angleText itself.
+		private void setUTInternal(double d) {
 			curState.UT = d;
 			timeText = curState.UT.ToString();
 			changed = true;
@@ -212,6 +225,7 @@ namespace RegexKSP {
 					timeText = d.ToString();
 					curState.UT = d;
 					changed = true;
+					updateAngleText();  // UT came from external text input, sync angle display
 				}
 			}
 		}
@@ -226,6 +240,68 @@ namespace RegexKSP {
 
 		internal void setApoapsis() {
 			setUT(Planetarium.GetUniversalTime() + node.patch.timeToAp);
+		}
+
+		private double computeAngleFromUT(double ut) {
+			if (node == null || node.patch == null) return 0.0;
+			double taDeg = node.patch.TrueAnomalyAtUT(ut) * (180.0 / Math.PI);
+			// KSP stores argumentOfPeriapsis and LAN in degrees, matching taDeg units here.
+			switch (angleRefIndex) {
+				case 1:  return (taDeg + node.patch.argumentOfPeriapsis).Angle360();
+				case 2:  return (taDeg + node.patch.argumentOfPeriapsis + node.patch.LAN).Angle360();
+				default: return taDeg.Angle360();
+			}
+		}
+
+		private double computeUTFromAngle(double angleDeg) {
+			if (node == null || node.patch == null) return curState.UT;
+			double taDeg;
+			switch (angleRefIndex) {
+				case 1:  taDeg = angleDeg - node.patch.argumentOfPeriapsis; break;
+				case 2:  taDeg = angleDeg - node.patch.argumentOfPeriapsis - node.patch.LAN; break;
+				default: taDeg = angleDeg; break;
+			}
+			// Get the base near-future occurrence, then shift by period to find the
+			// occurrence closest to the node's current UT.
+			double ut = node.patch.GetUTforTrueAnomaly(taDeg.Angle360() * Math.PI / 180.0, 2);
+			if (node.patch.isClosed()) {
+				double p = node.patch.period;
+				while (ut < curState.UT - p / 2.0) ut += p;
+				while (ut > curState.UT + p / 2.0) ut -= p;
+			}
+			return node.patch.isUTInsidePatch(ut) ? ut : curState.UT;
+		}
+
+		internal void updateAngleText() {
+			if (node == null || node.patch == null) return;
+			angleText   = Math.Round(computeAngleFromUT(curState.UT), 4).ToString("0.####");
+			angleParsed = true;
+		}
+
+		internal void setAngleRef(int refIndex) {
+			angleRefIndex = refIndex;
+			updateAngleText();
+		}
+
+		internal void setAngle(string s) {
+			if (angleText.Equals(s, StringComparison.Ordinal)) return;
+			angleText = s;
+			if (s.EndsWith(".")) { angleParsed = false; return; }
+			double d;
+			angleParsed = double.TryParse(angleText, out d);
+			if (angleParsed) {
+				// Use setUTInternal so updateAngleText is not called and the user's
+				// exact typed string is preserved in angleText without round-tripping.
+				setUTInternal(computeUTFromAngle(d));
+			}
+		}
+
+		internal void addAngle(double d) {
+			if (node == null || node.patch == null) return;
+			double newAngle = (computeAngleFromUT(curState.UT) + d).Angle360();
+			setUTInternal(computeUTFromAngle(newAngle));
+			// Display the pre-round-trip value so the field doesn't drift with repeated presses.
+			angleText = Math.Round(newAngle, 4).ToString("0.####");
 		}
 
 		internal bool hasNode() {
@@ -255,6 +331,7 @@ namespace RegexKSP {
 				// the node has changed, take the node's new information for ourselves.
 				updateCurrentNodeState();
 				curState.update(node);
+				updateAngleText();
 			}
 		}
 

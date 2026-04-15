@@ -72,6 +72,7 @@ namespace RegexKSP {
 		internal double increment = 1.0;
 		internal double usedNodeThreshold = 0.5;
 		internal int conicsMode = 3;
+		internal int angleRefIndex = 0; // 0=Periapsis, 1=AN, 2=VernalEquinox
 
 		internal void downIncrement() {
 			if (increment == 0.01) {
